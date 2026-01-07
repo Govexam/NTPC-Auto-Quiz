@@ -1,46 +1,43 @@
-import os
-import requests
-import pandas as pd
+import os, requests, pandas as pd
+from datetime import datetime
 from io import StringIO
 
-# Config
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHANNEL_ID")
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQtjzNJ-ENITXsVxZlgkmfKrLWeKR4ffPYFiXEXuf0e8fv1mk0otCoN6J4RNmekecz_Z6PIUVCVJn0W/pub?output=csv"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR1X9vGvI2fO5Wc-5_mUfW9tS9i8_V8z3J1XW-n9u-GvX_Y1/pub?output=csv"
 
 def send_quiz():
     try:
-        # 1. Sheet Load Karo
-        print("Sheet download kar raha hoon...")
         r = requests.get(CSV_URL)
         r.encoding = 'utf-8'
         df = pd.read_csv(StringIO(r.text))
-        
-        # 2. Columns saaf karo
         df.columns = df.columns.str.strip()
-        print(f"Sheet mein total {len(df)} rows mili hain.")
+        
+        # Dono formats check karega (YYYY-MM-DD aur DD-MM-YYYY)
+        today1 = datetime.now().strftime("%Y-%m-%d")
+        today2 = datetime.now().strftime("%d-%m-%Y")
+        
+        df['Date'] = df['Date'].astype(str).str.strip()
+        todays_qs = df[(df['Date'] == today1) | (df['Date'] == today2)]
 
-        # 3. FORCE TEST: Sirf pehle 2 sawal uthao (No Date Filter)
-        test_qs = df.head(2)
+        if todays_qs.empty:
+            print("No questions found for today's date.")
+            return
 
-        for index, row in test_qs.iterrows():
-            print(f"Sawal bhej raha hoon: {row['Question']}")
-            
-            options = [str(row['Opt_A']), str(row['Opt_B']), str(row['Opt_C']), str(row['Opt_D'])]
-            
+        for _, row in todays_qs.iterrows():
             payload = {
                 "chat_id": CHAT_ID,
-                "question": f"TEST QUIZ: {row['Question']}",
-                "options": options,
+                "question": f"🆔 @mission_merit\n\n[{row['Subject']}] {row['Question']}",
+                "options": [str(row['Opt_A']), str(row['Opt_B']), str(row['Opt_C']), str(row['Opt_D'])],
+                "is_anonymous": False,
                 "type": "quiz",
-                "correct_option_id": 0
+                "correct_option_id": int(row['Correct']),
+                "explanation": f"{row['Explanation']}\n\n🔗 Join: @mission_merit"[:190],
+                "explanation_parse_mode": "HTML"
             }
-            
-            res = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPoll", json=payload)
-            print(f"Telegram ka jawab: {res.text}")
-
+            requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPoll", json=payload)
     except Exception as e:
-        print(f"Galti ho gayi: {e}")
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     send_quiz()
