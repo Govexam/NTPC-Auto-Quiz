@@ -3,7 +3,7 @@ name: Daily Telegram Quiz
 
 on:
   schedule:
-    - cron: '30 3 * * *' # Roz Indian Time 9:00 AM par chalega
+    - cron: '30 12 * * *' # Roz Indian Time 9:00 AM par chalega
   workflow_dispatch: # Taaki aap 'Run Workflow' button daba kar check kar sako
 
 jobs:
