@@ -1,1 +1,29 @@
 
+name: Daily Telegram Quiz
+
+on:
+  schedule:
+    - cron: '30 3 * * *' # Roz Indian Time 9:00 AM par chalega
+  workflow_dispatch: # Taaki aap 'Run Workflow' button daba kar check kar sako
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Quiz Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+        run: python bot.py
