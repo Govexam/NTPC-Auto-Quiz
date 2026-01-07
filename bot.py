@@ -1,41 +1,34 @@
 import os
+import time  # Time module add kiya hai break ke liye
 import requests
 import pandas as pd
 from io import StringIO
 
 TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHANNEL_ID")
-# Aapka Naya Published Link
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQtjzNJ-ENITXsVxZlgkmfKrLWeKR4ffPYFiXEXuf0e8fv1mk0otCoN6J4RNmekecz_Z6PIUVCVJn0W/pub?output=csv"
 
 def send_quiz():
     try:
-        # Data download
         r = requests.get(CSV_URL)
         r.encoding = 'utf-8'
-        
-        # Header=0 ka matlab pehli line headers hai, par hum iloc (position) use karenge
         df = pd.read_csv(StringIO(r.text))
         
-        print(f"Total {len(df)} rows mili hain.")
+        print(f"Total {len(df)} sawal mile. Ab sab bhej raha hoon...")
 
-        # Sirf pehle 5 sawal bhejne ka loop
-        for index, row in df.head(5).iterrows():
+        # LIMIT HATA DI HAI: Ab ye df.head(5) nahi, balki puri 'df' chalayega
+        for index, row in df.iterrows():
             
-            # --- YAHAN JADU HAI (Position Mapping) ---
-            # Hum naam nahi, column ka number use kar rahe hain
-            # CSV: Date(0), Exam(1), Subject(2), Question(3), A(4), B(5), C(6), D(7), Correct(8), Expl(9)
-            
-            subject = str(row.iloc[2])      # 3rd Column (Subject)
-            question = str(row.iloc[3])     # 4th Column (Question)
-            opt_a = str(row.iloc[4])        # 5th Column
+            # --- Position Mapping (Naam ka jhanjhat nahi) ---
+            subject = str(row.iloc[2])      # Column 3
+            question = str(row.iloc[3])     # Column 4
+            opt_a = str(row.iloc[4])        # Column 5
             opt_b = str(row.iloc[5])
             opt_c = str(row.iloc[6])
             opt_d = str(row.iloc[7])
-            correct = int(row.iloc[8])      # 9th Column (0,1,2,3)
-            expl = str(row.iloc[9])         # 10th Column (Explanation)
+            correct = int(row.iloc[8])      # Column 9
+            expl = str(row.iloc[9])         # Column 10
 
-            # Message taiyar
             payload = {
                 "chat_id": CHAT_ID,
                 "question": f"🆔 @mission_merit\n\n[{subject}] {question}",
@@ -45,12 +38,18 @@ def send_quiz():
                 "explanation": f"{expl}\n\nJoin @mission_merit"
             }
             
-            # Bhej do
             resp = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPoll", json=payload)
-            print(f"Status: {resp.status_code} | Question: {question[:15]}...")
+            
+            if resp.status_code == 200:
+                print(f"✅ Sent: {question[:20]}...")
+            else:
+                print(f"❌ Failed: {resp.status_code}")
+
+            # 2 Second ka break taaki Telegram Ban na kare
+            time.sleep(2)
 
     except Exception as e:
-        print(f"❌ Error aaya: {e}")
+        print(f"❌ Error: {e}")
 
 if __name__ == "__main__":
     send_quiz()
