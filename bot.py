@@ -10,19 +10,31 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQtjzNJ-ENITXsVxZlgkm
 
 def send_quiz():
     try:
-        df = pd.read_csv(CSV_URL)
-        today = datetime.now().strftime("%Y-%m-%d")
+        # Load Sheet
+        response = requests.get(CSV_URL)
+        response.encoding = 'utf-8' # Hindi text sahi dikhne ke liye
+        from io import StringIO
+        df = pd.read_csv(StringIO(response.text))
+        
+        # DATE FIX: Sheet format DD-MM-YYYY read karega
+        today = datetime.now().strftime("%d-%m-%Y")
+        
+        # Data Cleaning: Date aur Correct column ko sahi format mein laana
+        df['Date'] = df['Date'].astype(str).str.strip()
+        
+        # Filtering today's questions
         todays_qs = df[df['Date'] == today]
 
         if todays_qs.empty:
-            print(f"No questions for {today}")
+            print(f"Bhai, aaj ({today}) ki date ka koi sawal nahi mila!")
             return
+
+        print(f"Sawal mil gaye! Total: {len(todays_qs)}. Posting to Telegram...")
 
         for index, row in todays_qs.iterrows():
             options = [str(row['Opt_A']), str(row['Opt_B']), str(row['Opt_C']), str(row['Opt_D'])]
             
-            # Clickable link format (HTML)
-            # Explanation ke andar humne thoda space diya hai
+            # Branding & Clickable Link
             footer_text = "\n\n━━━━━━━━━━━━━━━\n🔗 Join: @mission_merit"
             full_explanation = f"{row['Explanation']}{footer_text}"
 
@@ -34,8 +46,8 @@ def send_quiz():
                 "is_anonymous": False,
                 "type": "quiz",
                 "correct_option_id": int(row['Correct']),
-                "explanation": full_explanation[:190], # Telegram limit
-                "explanation_parse_mode": "HTML" # Isse @handle clickable ho jayega
+                "explanation": full_explanation[:190], # 200 char limit safe
+                "explanation_parse_mode": "HTML"
             }
             requests.post(url, json=payload)
 
