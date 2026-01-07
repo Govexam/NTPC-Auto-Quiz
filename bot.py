@@ -21,20 +21,21 @@ def send_quiz():
         for index, row in todays_qs.iterrows():
             options = [str(row['Opt_A']), str(row['Opt_B']), str(row['Opt_C']), str(row['Opt_D'])]
             
-            # Yahan humne branding add kar di hai
-            footer_text = "\n\n✅ Join: @mission_merit"
+            # Clickable link format (HTML)
+            # Explanation ke andar humne thoda space diya hai
+            footer_text = "\n\n━━━━━━━━━━━━━━━\n🔗 Join: @mission_merit"
             full_explanation = f"{row['Explanation']}{footer_text}"
 
             url = f"https://api.telegram.org/bot{TOKEN}/sendPoll"
             payload = {
                 "chat_id": CHAT_ID,
-                # Sawal ke sath bhi channel ka naam
                 "question": f"🆔 @mission_merit\n\n[{row['Subject']}] {row['Question']}",
                 "options": options,
                 "is_anonymous": False,
                 "type": "quiz",
                 "correct_option_id": int(row['Correct']),
-                "explanation": full_explanation[:190] # Telegram limit 200 chars
+                "explanation": full_explanation[:190], # Telegram limit
+                "explanation_parse_mode": "HTML" # Isse @handle clickable ho jayega
             }
             requests.post(url, json=payload)
 
